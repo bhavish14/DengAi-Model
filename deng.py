@@ -64,32 +64,9 @@ class dengAi():
 		# Report
 		self.report = {}
 
-		self.decision_tree_report = []
-		self.svc_report = []
-		self.random_forest_report = []
-		self.adaboost_report = []
-		self.bagging_report = []
-		self.knn_report = []
-
 		# Prediction values
-
-		self.decision_tree_predictions_train = []
-		self.decision_tree_predictions_test = []
-
-		self.svc_predictions_train = []
-		self.svc_predictions_test = []
-
-		self.random_forest_predictions_train = []
-		self.random_forest_predictions_test = []
-
-		self.adaboost_predictions_train = []
-		self.adaboost_predictions_test = []
-
-		self.bagging_predictions_train = []
-		self.bagging_predictions_test = []
-
-		self.knn_predictions_train = []
-		self.knn_predictions_test = []
+		self.train_predictions = {}
+		self.test_predictions = {}
 
 
 	def preprocess_data(self, test):
@@ -174,15 +151,13 @@ class dengAi():
 		for col_name in final_cols:
 			modified_X_train = self.dataset.drop(col_name, axis=1)
 
-
-
 		X_train, X_test, y_train, y_test = train_test_split(
 			modified_X_train, modified_y_train, test_size = 0.33, random_state = 42
 		)
 
 		# Populating the values for the train
-		self.x_vals = X_train.values
-		self.y_vals = y_train.values
+		self.x_vals = modified_X_train.values
+		self.y_vals = modified_y_train.values
 		self.y_vals = self.y_vals.reshape(self.y_vals.shape[0], 1)
 
 	def generate_data_test(self, rows):
@@ -205,7 +180,21 @@ class dengAi():
 		ax.set_ylabel('Predicted')
 		plt.show()
 
+	def beautify_report(self):
 
+		head = "Model \t\t\tPrecision \tRecall \t\tF1_Score \tSupport"
+		fmt = "{Model:s}\t\t{Precision:0.4f}\t\t{Recall:0.4f}\t\t{F1_Score:0.3f}\t\t{Support:0.3f}"
+
+		print(head)
+		for model in self.report:
+			temp = self.report[model]['weighted avg']
+			print(fmt.format(
+				Model=model,
+				Precision=temp['precision'],
+				Recall=temp['recall'],
+				F1_Score=temp['f1-score'],
+				Support=temp['support']
+			))
 
 	'''
 		Models
@@ -216,95 +205,70 @@ class dengAi():
 		self.d_tree.fit(self.x_vals, self.y_vals)
 
 	def decision_tree_predict_train(self):
-		self.decision_tree_predictions_train = cross_val_predict(self.d_tree, self.x_vals, self.y_vals,
+		self.train_predictions['decision_tree'] = cross_val_predict(self.d_tree, self.x_vals, self.y_vals,
 																 cv=10)  # self.d_tree.predict(self.x_vals)
-		self.decision_tree_predictions_train = self.decision_tree_predictions_train.astype(int)
+		self.train_predictions['decision_tree'] = self.train_predictions['decision_tree'].astype(int)
 
-		#self.report['DTree_train'] =
-
-		self.decision_tree_report.append(
-			classification_report(
-				self.y_vals, self.decision_tree_predictions_train, output_dict=True
-			)
+		self.report['decision_tree'] = classification_report(
+		self.y_vals, self.train_predictions['decision_tree'], output_dict=True
 		)
 
 	def decision_tree_predict_test(self):
-		self.report['DTree_test'] = self.d_tree.predict(self.x_test_vals)
-		self.decision_tree_predictions_test = self.d_tree.predict(self.x_test_vals)
+		self.test_predictions['decision_tree'] = self.d_tree.predict(self.x_test_vals)
 
 	# Support Vectors
 	def svc_init(self):
 		self.svc.fit(self.x_vals, self.y_vals)
 
 	def svc_predict_train(self):
-		self.svc_predictions_train = cross_val_predict(self.svc, self.x_vals, self.y_vals,
+		self.train_predictions['svc'] = cross_val_predict(self.svc, self.x_vals, self.y_vals,
 																 cv=10)
 		#self.svc.predict(self.x_vals)
-		self.svc_predictions_train = self.svc_predictions_train.astype(int)
+		self.train_predictions['svc'] = self.train_predictions['svc'].astype(int)
 
 		self.report['svc_train'] = classification_report(
-				self.y_vals, self.svc_predictions_train, output_dict=True
+				self.y_vals, self.train_predictions['svc'], output_dict=True
 			)
 
-
-		self.svc_report.append(
-			classification_report(
-				self.y_vals, self.svc_predictions_train, output_dict=True
-			)
-		)
 
 	def svc_predict_test(self):
-		self.report['svc_test'] = self.svc.predict(self.x_test_vals)
-		self.svc_predictions_test = self.svc.predict(self.x_test_vals)
+		self.test_predictions['svc'] = self.svc.predict(self.x_test_vals)
 
 	# Random Forest
 	def random_forest_init(self):
 		self.rand_forest.fit(self.x_vals, self.y_vals)
 
 	def random_forest_train(self):
-		self.random_forest_predictions_train = cross_val_predict(self.rand_forest, self.x_vals, self.y_vals,
+		self.train_predictions['random_forest'] = cross_val_predict(self.rand_forest, self.x_vals, self.y_vals,
 																 cv=10)
 		#self.rand_forest.predict(self.x_vals)
-		self.random_forest_predictions_train = self.random_forest_predictions_train.astype(int)
+		self.train_predictions['random_forest'] = self.train_predictions['random_forest'].astype(int)
 
 		self.report['RF_train'] = classification_report(
-				self.y_vals, self.random_forest_predictions_train, output_dict= True
-			)
-
-
-		self.random_forest_report.append(
-			classification_report(
-				self.y_vals, self.random_forest_predictions_train, output_dict= True
-			)
+			self.y_vals, self.train_predictions['random_forest'], output_dict= True
 		)
 
 	def random_forest_test(self):
-		self.report['RF_test'] = self.rand_forest.predict(self.x_test_vals)
-		self.random_forest_predictions_test = self.rand_forest.predict(self.x_test_vals)
+		self.test_predictions['RF_test'] = self.rand_forest.predict(self.x_test_vals)
+
 
 	# Adaboost
 	def adaboost_init(self):
 		self.adaboost.fit(self.x_vals, self.y_vals)
 
 	def adaboost_train(self):
-		self.adaboost_predictions_train = cross_val_predict(self.adaboost, self.x_vals, self.y_vals,
+		self.train_predictions['adaboost'] = cross_val_predict(self.adaboost, self.x_vals, self.y_vals,
 																 cv=10)
 		#self.adaboost.predict(self.x_vals)
-		self.adaboost_predictions_train = self.adaboost_predictions_train.astype(int)
+		self.train_predictions['adaboost'] = self.train_predictions['adaboost'].astype(int)
 
 		self.report['Adaboost_train'] = classification_report(
-				self.y_vals, self.adaboost_predictions_train, output_dict= True
+				self.y_vals, self.train_predictions['adaboost'], output_dict= True
 			)
-
-		self.adaboost_report.append(
-			classification_report(
-				self.y_vals, self.adaboost_predictions_train, output_dict= True
-			)
-		)
 
 	def adaboost_test(self):
-		self.report['Adaboost_test'] = self.adaboost.predict(self.x_test_vals)
-		self.adaboost_predictions_test = self.adaboost.predict(self.x_test_vals)
+		self.test_predictions['Adaboost_test'] = self.adaboost.predict(self.x_test_vals)
+
 
 def main():
 	path_train = "/Users/bhavish96.n/Documents/UTD/Fall '18/Machine Learning [Anurag Nagar]/Assignments/Long Project 1/Project Data/dengue_features_train.csv"
@@ -329,58 +293,34 @@ def main():
 			deng_object.decision_tree_init()
 			deng_object.decision_tree_predict_train()
 			deng_object.decision_tree_predict_test()
-			final_report['Decision_tree'] = deng_object.decision_tree_report[0]['weighted avg']
-
-
+			'''
 			# Support vectors
 			deng_object.svc_init()
 			deng_object.svc_predict_train()
 			deng_object.svc_predict_test()
-			final_report['SVC'] = deng_object.svc_report[0]['weighted avg']
 
 			# Random Forest
 			deng_object.random_forest_init()
 			deng_object.random_forest_train()
 			deng_object.random_forest_test()
-			final_report['Random Forest'] = deng_object.random_forest_report[0]['weighted avg']
 
 			# Adaboost
 			deng_object.adaboost_init()
 			deng_object.adaboost_train()
 			deng_object.adaboost_test()
-			final_report['Adaboost'] = deng_object.adaboost_report[0]['weighted avg']
+			'''
 
+	'''
 	deng_object.plot_cross_validations(
 		deng_object.y_vals,
 		deng_object.decision_tree_predictions_train,
 
 	)
-
-	beautify_report(final_report)
-
-
-def beautify_report(report):
-	head = "Model \t\t\t Precision \t\t Recall \t\t F1_Score \t\t Support"
-	fmt = "{Model:s}\t\t{Precision:0.4f}\t\t{Recall:0.4f}\t\t{F1_Score:0.3f}\t\t{Support:0.3f}"
-
-	print(head)
-	for record in report:
-		temp = report[record]
-		print(fmt.format(
-			Model=record,
-			Precision=temp['precision'],
-			Recall=temp['recall'],
-			F1_Score=temp['f1-score'],
-			Support=temp['support']
-		))
-
 	'''
-	print ("\n")
-	print ("\t Model \t\t Precision \t\t Recall \t\t F1-Score \t\t Support")
-	for record in report:
-		temp = report[record]
-		print ("\t", record, "\t %.3f \t %.3f \t %.3f \t %.3f" % (temp['precision'], temp['recall'], temp['f1-score'], temp['support']))
-	'''
+
+	deng_object.beautify_report()
+
+
 
 
 if __name__ == '__main__':
